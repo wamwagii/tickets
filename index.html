@@ -45,11 +45,50 @@
             border-color: var(--primary);
             background-color: #f0f7ff;
         }
-        .progress-bar {
-            height: 6px;
-            border-radius: 3px;
-            overflow: hidden;
+        
+        /* Event card styling */
+        .event-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid var(--primary);
         }
+        .event-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* Modal styling */
+        .modal {
+            transition: opacity 0.25s ease;
+        }
+        
+        /* QR Scanner styling */
+        .scanner-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .scanner-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent 49%, rgba(255, 0, 0, 0.2) 50%, transparent 51%);
+            animation: scan 2s infinite linear;
+            pointer-events: none;
+        }
+        @keyframes scan {
+            0% { top: 0; }
+            100% { top: 100%; }
+        }
+        .scanner-frame {
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(230, 57, 70, 0.5);
+        }
+        
+        /* Seat Map Styling */
         .seat-map {
             display: grid;
             grid-template-columns: repeat(10, 1fr);
@@ -88,25 +127,9 @@
             outline: 2px solid #000;
             outline-offset: 2px;
         }
-        
-        /* Event card styling */
-        .event-card {
-            transition: all 0.3s ease;
-            border-left: 4px solid var(--primary);
-        }
-        .event-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
-        }
-        
-        /* Modal styling */
-        .modal {
-            transition: opacity 0.25s ease;
-        }
-        .modal-active {
-            overflow: hidden;
-        }
-        body.modal-active {
+        .progress-bar {
+            height: 6px;
+            border-radius: 3px;
             overflow: hidden;
         }
     </style>
@@ -146,13 +169,13 @@
                         Verify Ticket <i class="fas fa-chevron-down ml-1 text-xs"></i>
                     </button>
                     <div x-show="open" @click.away="open = false" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
-                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">QR Code Scan</a>
+                        <a href="#" @click.prevent="openQRScanner" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">QR Code Scan</a>
                         <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-100">Order ID</a>
                     </div>
                 </div>
                 
                 <!-- Cart Button -->
-                <button class="relative text-gray-700 hover:text-primary">
+                <button class="relative text-gray-700 hover:text-primary" @click="cartOpen = true">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span x-text="cartCount" class="absolute -top-2 -right-2 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"></span>
                 </button>
@@ -160,10 +183,7 @@
             
             <!-- Mobile menu button -->
             <div class="flex items-center space-x-4 md:hidden">
-                <button class="text-gray-700">
-                    <i class="fas fa-search text-xl"></i>
-                </button>
-                <button class="text-gray-700 relative">
+                <button class="relative text-gray-700 hover:text-primary" @click="cartOpen = true">
                     <i class="fas fa-shopping-cart text-xl"></i>
                     <span x-text="cartCount" class="absolute -top-2 -right-2 bg-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs"></span>
                 </button>
@@ -179,7 +199,7 @@
                 <a href="#" class="text-gray-700 hover:text-primary font-medium">Events</a>
                 <a href="#" class="text-gray-700 hover:text-primary font-medium">How It Works</a>
                 <a href="#" class="text-gray-700 hover:text-primary font-medium">Support</a>
-                <a href="#" class="text-gray-700 hover:text-primary font-medium">Verify Ticket</a>
+                <a href="#" @click.prevent="openQRScanner" class="text-gray-700 hover:text-primary font-medium">QR Code Scan</a>
             </div>
         </div>
     </header>
@@ -189,7 +209,7 @@
         <div class="container mx-auto px-4 text-center">
             <h2 class="text-4xl font-bold mb-6">Discover Amazing Events Across Africa</h2>
             <p class="text-xl mb-8 max-w-2xl mx-auto">From sports tournaments to music festivals, find and book tickets for the best events on the continent</p>
-            <div class="flex justify-center gap-4">
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
                 <button class="bg-primary hover:bg-red-700 text-white font-bold py-3 px-6 rounded-lg transition">Browse Events</button>
                 <button class="bg-transparent hover:bg-accent2 text-white font-bold py-3 px-6 rounded-lg border-2 border-white transition">How It Works</button>
             </div>
@@ -199,31 +219,29 @@
     <!-- Events Index Section -->
     <section class="py-16 bg-white">
         <div class="container mx-auto px-4">
-            <div class="flex justify-between items-center mb-12">
-                <h2 class="text-3xl font-bold">Featured Events</h2>
-                <div class="flex gap-4">
-                    <select class="border rounded-lg px-4 py-2">
-                        <option>All Categories</option>
-                        <option>Sports</option>
-                        <option>Concerts</option>
-                        <option>Conferences</option>
-                        <option>Festivals</option>
+            <div class="flex flex-col lg:flex-row justify-between items-center mb-12">
+                <h2 class="text-3xl font-bold mb-4 lg:mb-0">Featured Events</h2>
+                <div class="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
+                    <select x-model="selectedCategory" class="border rounded-lg px-4 py-2 w-full sm:w-auto">
+                        <option value="all">All Categories</option>
+                        <template x-for="category in categories" :key="category">
+                            <option x-text="category" :value="category"></option>
+                        </template>
                     </select>
-                    <select class="border rounded-lg px-4 py-2">
-                        <option>All Locations</option>
-                        <option>Nairobi</option>
-                        <option>Lagos</option>
-                        <option>Accra</option>
-                        <option>Johannesburg</option>
+                    <select x-model="selectedLocation" class="border rounded-lg px-4 py-2 w-full sm:w-auto">
+                        <option value="all">All Locations</option>
+                        <template x-for="location in locations" :key="location">
+                            <option x-text="location" :value="location"></option>
+                        </template>
                     </select>
                 </div>
             </div>
             
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
                 <!-- Event Cards -->
-                <template x-for="event in events" :key="event.id">
+                <template x-for="event in filteredEvents" :key="event.id">
                     <div class="event-card bg-white rounded-xl shadow-lg overflow-hidden cursor-pointer h-full flex flex-col">
-                        <div class="h-48 relative" :style="`background-color: ${event.color}`">
+                        <div class="h-48 relative" :style="`background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), ${event.color}`">
                             <span class="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-bold" x-text="event.tag"></span>
                             <button class="absolute top-4 right-4 bg-white text-dark p-2 rounded-full">
                                 <i class="far fa-heart"></i>
@@ -240,9 +258,20 @@
                         </div>
                         <div class="px-6 pb-6">
                             <button @click="openEventDetails(event)" class="w-full bg-dark hover:bg-accent2 text-white font-bold py-3 rounded-lg transition">
-                                View Details
+                                View Details & Buy Tickets
                             </button>
                         </div>
+                    </div>
+                </template>
+                
+                <template x-if="filteredEvents.length === 0">
+                    <div class="col-span-full text-center py-12">
+                        <i class="fas fa-ticket-alt text-4xl text-gray-400 mb-4"></i>
+                        <h3 class="text-xl font-bold text-gray-600">No events match your filters</h3>
+                        <p class="text-gray-500 mt-2">Try adjusting your category or location filters</p>
+                        <button @click="clearFilters" class="mt-4 bg-primary hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">
+                            Clear Filters
+                        </button>
                     </div>
                 </template>
             </div>
@@ -324,14 +353,14 @@
                                 <!-- Event Image and Basic Info -->
                                 <div class="lg:col-span-2">
                                     <div class="rounded-xl overflow-hidden shadow-lg mb-6">
-                                        <img :src="selectedEvent.image" :alt="selectedEvent.title" class="w-full h-64 md:h-96 object-cover">
+                                        <div class="h-64 md:h-96" :style="`background: linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.3)), ${selectedEvent.color}`"></div>
                                     </div>
                                     
                                     <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
                                         <h2 class="text-2xl font-bold mb-4">About This Event</h2>
                                         <p class="text-gray-700 mb-4" x-text="selectedEvent.description"></p>
                                         <p class="text-gray-700">
-                                            Gates open at 2:00 PM. The match kicks off at 4:00 PM. Please arrive early to avoid long queues and ensure you don't miss any of the action.
+                                            Gates open at 2:00 PM. The event starts at 4:00 PM. Please arrive early to avoid long queues and ensure you don't miss any of the action.
                                         </p>
                                     </div>
                                     
@@ -534,6 +563,195 @@
         </div>
     </div>
 
+    <!-- Shopping Cart Modal -->
+    <div x-show="cartOpen" x-cloak class="fixed inset-0 overflow-y-auto z-50 modal" 
+         :class="{'opacity-0 pointer-events-none': !cartOpen, 'opacity-100': cartOpen}">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="cartOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" 
+                 class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="cartOpen" x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-2xl leading-6 font-bold text-gray-900">Your Cart</h3>
+                                <button @click="cartOpen = false" type="button" class="text-gray-400 hover:text-gray-500">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <template x-if="cartItems.length === 0">
+                                    <div class="text-center py-8">
+                                        <i class="fas fa-shopping-cart text-4xl text-gray-300 mb-4"></i>
+                                        <p class="text-gray-500">Your cart is empty</p>
+                                    </div>
+                                </template>
+                                
+                                <template x-for="item in cartItems" :key="item.id">
+                                    <div class="border-b py-4">
+                                        <div class="flex justify-between">
+                                            <div>
+                                                <h4 class="font-bold" x-text="item.eventTitle"></h4>
+                                                <p class="text-sm text-gray-600" x-text="`${item.quantity} x ${item.category} ticket`"></p>
+                                            </div>
+                                            <div class="text-right">
+                                                <p class="font-bold" x-text="'Kes ' + (item.price * item.quantity).toLocaleString()"></p>
+                                                <button @click="removeFromCart(item.id)" class="text-red-500 text-sm">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </template>
+                                
+                                <div class="mt-6 border-t pt-4" x-show="cartItems.length > 0">
+                                    <div class="flex justify-between items-center mb-4">
+                                        <span class="text-lg font-semibold">Total:</span>
+                                        <span class="text-xl font-bold text-primary" x-text="'Kes ' + cartTotal.toLocaleString()"></span>
+                                    </div>
+                                    <button class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-lg transition">
+                                        Proceed to Checkout
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scanner Modal -->
+    <div x-show="qrScannerOpen" x-cloak class="fixed inset-0 overflow-y-auto z-50 modal" 
+         :class="{'opacity-0 pointer-events-none': !qrScannerOpen, 'opacity-100': qrScannerOpen}">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="qrScannerOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" 
+                 class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-dark opacity-90"></div>
+            </div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="qrScannerOpen" x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-2xl leading-6 font-bold text-gray-900">QR Code Scanner</h3>
+                                <button @click="qrScannerOpen = false" type="button" class="text-gray-400 hover:text-gray-500">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <p class="text-gray-600 mb-6">Position the QR code within the frame to scan</p>
+                                
+                                <div class="scanner-container">
+                                    <div class="scanner-frame aspect-square bg-gray-200 flex items-center justify-center">
+                                        <i class="fas fa-camera text-4xl text-gray-400"></i>
+                                        <div class="scanner-overlay"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 text-center">
+                                    <p class="text-gray-500 text-sm">Having trouble scanning? <a href="#" class="text-primary">Enter code manually</a></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button @click="simulateQRScan" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Simulate Scan
+                    </button>
+                    <button @click="qrScannerOpen = false" type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- QR Scan Result Modal -->
+    <div x-show="qrResultOpen" x-cloak class="fixed inset-0 overflow-y-auto z-50 modal" 
+         :class="{'opacity-0 pointer-events-none': !qrResultOpen, 'opacity-100': qrResultOpen}">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div x-show="qrResultOpen" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0" 
+                 x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" 
+                 class="fixed inset-0 transition-opacity" aria-hidden="true">
+                <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+            </div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div x-show="qrResultOpen" x-transition:enter="ease-out duration-300" 
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave="ease-in duration-200" 
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100" 
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95" 
+                 class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
+                
+                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-2xl leading-6 font-bold text-gray-900">Ticket Verification</h3>
+                                <button @click="qrResultOpen = false" type="button" class="text-gray-400 hover:text-gray-500">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="mt-4 text-center">
+                                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                                    <i class="fas fa-check text-green-600 text-xl"></i>
+                                </div>
+                                <h4 class="text-lg font-medium text-gray-900 mb-2">Ticket Verified Successfully!</h4>
+                                <p class="text-gray-600 mb-4">This ticket is valid for entry to the event.</p>
+                                
+                                <div class="bg-gray-100 p-4 rounded-lg text-left mb-4">
+                                    <h5 class="font-bold mb-2">Ticket Details</h5>
+                                    <p class="text-sm"><span class="font-semibold">Event:</span> Africa Cup Finals</p>
+                                    <p class="text-sm"><span class="font-semibold">Ticket Holder:</span> John Doe</p>
+                                    <p class="text-sm"><span class="font-semibold">Seat:</span> VVIP - A3</p>
+                                    <p class="text-sm"><span class="font-semibold">Date:</span> July 15, 2023 • 4:00 PM</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                    <button @click="qrResultOpen = false" type="button" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary text-base font-medium text-white hover:bg-red-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">
+                        Done
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="bg-dark text-white py-12">
         <div class="container mx-auto px-4">
@@ -585,10 +803,18 @@
             return {
                 mobileMenuOpen: false,
                 eventDetailOpen: false,
+                cartOpen: false,
+                qrScannerOpen: false,
+                qrResultOpen: false,
                 selectedEvent: {},
-                selectedCategory: '',
+                selectedCategory: 'all',
+                selectedLocation: 'all',
+                ticketCategory: '',
                 quantity: 1,
                 cartCount: 0,
+                cartItems: [],
+                categories: ['Sports', 'Concert', 'Festival', 'Conference', 'Exhibition'],
+                locations: ['Nairobi', 'Lagos', 'Accra', 'Johannesburg', 'Cairo'],
                 tickets: {
                     vvip: { price: 4000, available: 60, sold: 12 },
                     vip: { price: 2000, available: 150, sold: 38 },
@@ -626,12 +852,11 @@
                         id: 1,
                         title: "Africa Cup Finals",
                         date: "July 15, 2023",
-                        location: "Nairobi National Stadium",
+                        location: "Nairobi",
                         price: "Kes 500",
                         category: "Sports",
                         tag: "Sold Out",
                         color: "#3b82f6",
-                        image: "https://images.unsplash.com/photo-1552667466-07770ae110d0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
                         description: "The Africa Cup Finals is the most anticipated football event of the year, bringing together the top teams from across the continent for an epic showdown at the Nairobi National Stadium.",
                         hasSeatMap: true
                     },
@@ -639,12 +864,11 @@
                         id: 2,
                         title: "Cultural Festival",
                         date: "August 5, 2023",
-                        location: "Kasarani Arena",
+                        location: "Lagos",
                         price: "Kes 2,000",
                         category: "Festival",
                         tag: "Early Bird",
                         color: "#10b981",
-                        image: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1074&q=80",
                         description: "Experience the rich cultural heritage of Africa through music, dance, art, and cuisine from across the continent.",
                         hasSeatMap: false
                     },
@@ -652,12 +876,11 @@
                         id: 3,
                         title: "Music Extravaganza",
                         date: "September 2, 2023",
-                        location: "Nyayo Stadium",
+                        location: "Nairobi",
                         price: "Kes 2,500",
                         category: "Concert",
                         tag: "Last Tickets",
                         color: "#8b5cf6",
-                        image: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
                         description: "A night of incredible performances from Africa's top artists and international special guests.",
                         hasSeatMap: true
                     },
@@ -665,12 +888,11 @@
                         id: 4,
                         title: "Tech Conference",
                         date: "October 12, 2023",
-                        location: "KICC Nairobi",
+                        location: "Accra",
                         price: "Kes 4,000",
                         category: "Conference",
                         tag: "VIP Available",
                         color: "#f59e0b",
-                        image: "https://images.unsplash.com/photo-1535016120720-40c646be5580?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
                         description: "Join Africa's tech leaders for insightful discussions, workshops, and networking opportunities.",
                         hasSeatMap: true
                     },
@@ -678,12 +900,11 @@
                         id: 5,
                         title: "Marathon Championship",
                         date: "November 8, 2023",
-                        location: "City Center",
+                        location: "Johannesburg",
                         price: "Kes 1,500",
                         category: "Sports",
                         tag: "New",
                         color: "#ec4899",
-                        image: "https://images.unsplash.com/photo-1594882645126-14020914d58d?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1185&q=80",
                         description: "Watch elite athletes from across Africa compete in this prestigious marathon event through the heart of the city.",
                         hasSeatMap: false
                     },
@@ -691,25 +912,41 @@
                         id: 6,
                         title: "Food & Wine Expo",
                         date: "December 3, 2023",
-                        location: "Convention Center",
+                        location: "Cairo",
                         price: "Kes 3,500",
                         category: "Exhibition",
                         tag: "Limited",
                         color: "#06b6d4",
-                        image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=1170&q=80",
                         description: "Savor the finest cuisine and wines from Africa and around the world at this exclusive gastronomic event.",
                         hasSeatMap: false
                     }
                 ],
+                get filteredEvents() {
+                    return this.events.filter(event => {
+                        const categoryMatch = this.selectedCategory === 'all' || event.category === this.selectedCategory;
+                        const locationMatch = this.selectedLocation === 'all' || event.location === this.selectedLocation;
+                        return categoryMatch && locationMatch;
+                    });
+                },
+                get cartTotal() {
+                    return this.cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+                },
                 openEventDetails(event) {
                     this.selectedEvent = event;
                     this.eventDetailOpen = true;
-                    // Reset selection when opening a new event
-                    this.selectedCategory = '';
+                    this.ticketCategory = '';
                     this.quantity = 1;
                 },
+                openQRScanner() {
+                    this.qrScannerOpen = true;
+                    this.mobileMenuOpen = false;
+                },
+                clearFilters() {
+                    this.selectedCategory = 'all';
+                    this.selectedLocation = 'all';
+                },
                 selectCategory(category) {
-                    this.selectedCategory = category;
+                    this.ticketCategory = category;
                     this.quantity = 1;
                 },
                 incrementQuantity() {
@@ -723,28 +960,51 @@
                     }
                 },
                 getMaxTickets() {
-                    if (!this.selectedCategory) return 0;
-                    return this.tickets[this.selectedCategory].available - this.tickets[this.selectedCategory].sold;
+                    if (!this.ticketCategory) return 0;
+                    return this.tickets[this.ticketCategory].available - this.tickets[this.ticketCategory].sold;
                 },
                 calculateTotal() {
-                    if (!this.selectedCategory) return 0;
-                    return this.tickets[this.selectedCategory].price * this.quantity;
+                    if (!this.ticketCategory) return 0;
+                    return this.tickets[this.ticketCategory].price * this.quantity;
                 },
                 addToCart() {
-                    if (!this.selectedCategory) return;
+                    if (!this.ticketCategory) return;
                     
+                    const cartItem = {
+                        id: Date.now(),
+                        eventTitle: this.selectedEvent.title,
+                        category: this.ticketCategory,
+                        price: this.tickets[this.ticketCategory].price,
+                        quantity: this.quantity
+                    };
+                    
+                    this.cartItems.push(cartItem);
                     this.cartCount += this.quantity;
                     
-                    // Show confirmation (in a real app, this would add to cart storage)
-                    alert(`Added ${this.quantity} ${this.selectedCategory.toUpperCase()} ticket(s) for ${this.selectedEvent.title} to cart!`);
+                    // Show confirmation
+                    alert(`Added ${this.quantity} ${this.ticketCategory.toUpperCase()} ticket(s) for ${this.selectedEvent.title} to cart!`);
                     
                     // Reset selection
-                    this.selectedCategory = '';
+                    this.ticketCategory = '';
                     this.quantity = 1;
+                    this.eventDetailOpen = false;
+                },
+                removeFromCart(itemId) {
+                    const itemIndex = this.cartItems.findIndex(item => item.id === itemId);
+                    if (itemIndex !== -1) {
+                        this.cartCount -= this.cartItems[itemIndex].quantity;
+                        this.cartItems.splice(itemIndex, 1);
+                    }
                 },
                 toggleSeat(seat) {
                     if (!seat.available) return;
                     seat.selected = !seat.selected;
+                },
+                simulateQRScan() {
+                    this.qrScannerOpen = false;
+                    setTimeout(() => {
+                        this.qrResultOpen = true;
+                    }, 300);
                 }
             };
         }
